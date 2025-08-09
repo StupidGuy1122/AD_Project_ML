@@ -17,12 +17,19 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# 安装基础调试工具（bash + curl）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash curl && \
+    rm -rf /var/lib/apt/lists/*
+
 # 安装运行依赖
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
+# 拷贝代码
 COPY . .
 
+# 环境变量
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 

@@ -1,28 +1,34 @@
-name: Build and Push Docker Image to Azure Container Registry
+name: CI/CD to Docker Hub & Azure
 
 on:
   push:
     branches:
-      - master  # 推送 master 分支时触发
+      - master  # 每次 push master 都会触发
 
 jobs:
-  docker:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
+      # 拉取代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 登录 Azure 容器注册表
-      - name: Azure Container Registry Login
-        run: |
-          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} \
-            -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+      # 登录 Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 构建镜像
-      - name: Build Docker image
-        run: docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest .
-
-      # 推送镜像
-      - name: Push Docker image
-        run: docker push ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest
+      # 构建并推送到 Docker Hub（用缓存加速）
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            stupidguy/adprojectml:latest
+            stupidguy/adprojectml:cache
+          cache-from: type=registry,ref=stupidguy/adprojectml:cache
+          cache-to: type=registry,ref=stupidguy/adprojectml:cache,mode=max

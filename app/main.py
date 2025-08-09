@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.recommender import recommend_activities, recommend_similar_users
 from app.tagpredictor import predict_tags
 
+
 app = FastAPI(
     title="活动推荐系统",
     description="基于混合模型的推荐接口",
@@ -28,8 +29,8 @@ class TagPredictRequest(BaseModel):
     title: str
     description: str
 
-@app.post("/recommend/")
-def recommend(request: RecommendRequest):
+@app.post("/recommendActivity/")
+def recommendActivity(request: RecommendRequest):
     # 调用推荐函数，返回一个包含 id, title, score 的 DataFrame
     df = recommend_activities(request.user_id, request.top_k)
     # 只取 id 列，并转成 int 列表
@@ -41,8 +42,8 @@ def recommend(request: RecommendRequest):
 
 
 
-@app.post("/similar-users/")
-def similar_users(request: SimilarUserRequest):
+@app.post("/recommendUser/")
+def recommendUser(request: SimilarUserRequest):
     raw = recommend_similar_users(request.user_id, request.top_k)
     # 过滤并转换成纯 Python int/float
     sim_users = []
@@ -86,8 +87,8 @@ def retrain(background_tasks: BackgroundTasks):
     background_tasks.add_task(_run_retraining)
     return {"message": "Model retraining has been started in background."}
 
-@app.post("/predict-tags/")
-def predict_tags(request: TagPredictRequest):
+@app.post("/predictTags/")
+def predictTags(request: TagPredictRequest):
     """预测活动标签API"""
     try:
         tags = predict_tags(request.title, request.description)

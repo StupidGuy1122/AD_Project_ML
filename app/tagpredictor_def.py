@@ -52,10 +52,10 @@ class FocalLoss(nn.Module):
         return F_loss.mean() if self.reduce else F_loss
 
 # ======== 保存和加载标签编码器 ========
-def save_vectorizer(mlb, filepath="../model/tag_vectorizers.pkl"):
+def save_vectorizer(mlb, filepath="model/tag_vectorizers.pkl"):
     joblib.dump(mlb, filepath)
 
-def load_vectorizer(filepath="../model/tag_vectorizers.pkl"):
+def load_vectorizer(filepath="model/tag_vectorizers.pkl"):
     return joblib.load(filepath)
 
 # ======== 文本向量化工具（BERT） ========

@@ -8,7 +8,7 @@ def load_tag_model():
         mlb = load_vectorizer()
         input_dim = 384  # all-MiniLM-L6-v2 输出维度
         model = DeepTagPredictor(input_dim, len(mlb.classes_))
-        model.load_state_dict(torch.load("../model/tag_predictor.pth", map_location="cpu"))
+        model.load_state_dict(torch.load("model/tag_predictor.pth", map_location="cpu", weights_only=False))
         model.eval()
         return model, mlb
     except Exception as e:
@@ -18,7 +18,7 @@ def load_tag_model():
 def predict_tags(title, description, threshold=0.3):
     model, mlb = load_tag_model()
     if model is None:
-        return []
+        return ["dafafa"]
 
     bert = BertEmbedder()
     text = f"{title} {description}"
@@ -36,6 +36,6 @@ def predict_tags(title, description, threshold=0.3):
     return predicted_tags
 
 if __name__ == "__main__":
-    title = "Language Exchange Cafe,Practice foreign languages casually"
-    desc = "Improve language skills over coffee and pastries! Rotate through conversation tables for Spanish, French, Mandarin, Japanese, and German. Native speakers facilitate discussions with cultural insights. Receive phrase cards and pronunciation tips. Perfect for travelers and language learners."
+    title = "Vintage Video Game Tournament"
+    desc = "Relive gaming history with our retro console tournament! Battle on original NES, Sega Genesis, and PlayStation systems. Featured games include Super Smash Bros, Sonic, and Street Fighter. Between matches, explore gaming history exhibits and try indie game demos. Costume contest for best 90s gamer outfit!"
     print(predict_tags(title, desc))

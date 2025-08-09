@@ -5,11 +5,11 @@ import os
 from app.recommender_def import HybridRecommender
 
 @torch.no_grad()
-def load_model(checkpoint_path="../model/recommender_checkpoint.pth"):
+def load_model(checkpoint_path="model/recommender_checkpoint.pth"):
     if not os.path.exists(checkpoint_path):
         raise FileNotFoundError("模型未训练，请先运行 train_model.py")
 
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     config = checkpoint['model_config']
     model = HybridRecommender(**config)
     model.load_state_dict(checkpoint['model_state_dict'])

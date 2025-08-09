@@ -1,16 +1,15 @@
-name: CI/CD to Docker Hub & Azure
+name: CI/CD to Azure ACR with Docker Hub Cache
 
 on:
   push:
     branches:
-      - master  # 每次 push master 都会触发
+      - master
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      # 拉取代码
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -21,14 +20,21 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 构建并推送到 Docker Hub（用缓存加速）
-      - name: Build and push image
-        uses: docker/build-push-action@v6
+      # 登录 Azure ACR
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
         with:
-          context: .
-          push: true
-          tags: |
-            stupidguy/adprojectml:latest
-            stupidguy/adprojectml:cache
-          cache-from: type=registry,ref=stupidguy/adprojectml:cache
-          cache-to: type=registry,ref=stupidguy/adprojectml:cache,mode=max
+          username: ${{ secrets.AZURE_ACR_USERNAME }}
+          password: ${{ secrets.AZURE_ACR_PASSWORD }}
+          registry: adprojectml.azurecr.io
+
+      # 尝试从 Docker Hub 拉取上一次构建的镜像作为缓存
+      - name: Pull cache image from Docker Hub
+        run: docker pull stupidguy/adprojectml:cache || echo "No cache image found, building from scratch"
+
+      # 构建并推送镜像（会复用缓存）
+      - name: Build and push image
+        run: |
+          docker build --cache-from=stupidguy/adprojectml:cache -t adprojectml.azurecr.io/adprojectml:latest -t stupidguy/adprojectml:cache .
+          docker push adprojectml.azurecr.io/adprojectml:latest
+          docker push stupidguy/adprojectml:cache

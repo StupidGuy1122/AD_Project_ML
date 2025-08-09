@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from app.recommender import recommend_activities, recommend_similar_users
 from app.tagpredictor import predict_tags
 
+import time, sys
+print(f"[DEBUG] 应用启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
 
 app = FastAPI(
     title="活动推荐系统",
@@ -95,3 +97,19 @@ def predictTags(request: TagPredictRequest):
         return {"predicted_tags": tags}
     except Exception as e:
         return {"error": f"标签预测失败: {str(e)}"}
+
+import sys
+from fastapi.routing import APIRoute
+
+def list_routes(app: FastAPI):
+    route_list = []
+    for route in app.routes:
+        if isinstance(route, APIRoute):
+            methods = ','.join(route.methods)
+            route_list.append(f"{methods} {route.path}")
+    return route_list
+
+print("=== API 路由列表 ===", file=sys.stderr)
+for r in list_routes(app):
+    print(r, file=sys.stderr)
+print("==================", file=sys.stderr)

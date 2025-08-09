@@ -1,12 +1,15 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  web:
-    build: .
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adml
     ports:
-      - "8000:80"
+      - "80:80"
     environment:
-      - MYSQL_HOST=adproject-database.mysql.database.azure.com
-      - MYSQL_USER=huerji@adproject-database
-      - MYSQL_PASSWORD=HuErJi123
-      - MYSQL_DB=adproject
+      DATABASE_URL: "mysql+pymysql://huerji%40adproject-database:HuErJi123@adproject-database.mysql.database.azure.com:3306/adproject?ssl=true"
+    volumes:
+      - .:/app   # 挂载当前目录，支持代码热更新
+    command: uvicorn app.main:app --host 0.0.0.0 --port 80 --reload

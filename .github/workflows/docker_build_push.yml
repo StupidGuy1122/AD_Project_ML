@@ -40,17 +40,11 @@ jobs:
       # 6. 设置 Buildx（关键优化点）
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        id: buildx  # 添加 ID 用于后续引用
         with:
           driver: docker-container
           install: true
           name: mybuilder
-          # 添加 BuildKit 配置标志
-          buildkitd-flags: --debug --allow-insecure-entitlement security.insecure
-          # 启用内联缓存支持（可选）
-          driver-opts: |
-            image=moby/buildkit:master  # 使用最新 BuildKit 版本
-            network=host
+          driver-opts: image=moby/buildkit:latest   # ✅ 用最新稳定版
 
       # 7. 登录 Azure 容器注册表
       - name: Log in to Azure Container Registry

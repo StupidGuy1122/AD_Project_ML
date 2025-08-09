@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.recommender import recommend_activities, recommend_similar_users
 from app.tagpredictor import predict_tags
 
+#这里会加入连接azure数据库的代码
 app = FastAPI(
     title="活动推荐系统",
     description="基于混合模型的推荐接口",

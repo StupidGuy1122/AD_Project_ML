@@ -31,14 +31,12 @@ jobs:
       - name: Run pytest
         run: pytest
 
-      # 5. 缓存 BuildKit 层
-      - name: Cache Docker BuildKit layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildkit-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildkit-
+      # 5. 开启 containerd image store
+      - name: Enable containerd image store
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{ "features": { "containerd-snapshotter": true } }' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
 
       # 6. 登录 Azure ACR
       - name: Log in to Azure Container Registry
@@ -48,12 +46,11 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 7. 构建并推送（BuildKit + 缓存）
-      - name: Build and push Docker image (BuildKit cache)
+      # 7. 构建并推送（使用 containerd 本地缓存）
+      - name: Build and push Docker image with local cache
         run: |
           DOCKER_BUILDKIT=1 docker build \
-            --cache-from=type=local,src=/tmp/.buildx-cache \
-            --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
+            --cache-from=type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:cache \
+            --cache-to=type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:cache,mode=max \
             -t ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest .
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest

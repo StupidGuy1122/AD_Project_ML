@@ -31,15 +31,28 @@ jobs:
       - name: Run pytest
         run: pytest
 
-      # 5. 设置 Buildx（必须用 docker-container driver 才能用 cache-to=gha）
+      # 5. 设置 QEMU（推荐添加）
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64  # 根据您的需求选择平台
+
+      # 6. 设置 Buildx（关键优化点）
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        id: buildx  # 添加 ID 用于后续引用
         with:
           driver: docker-container
           install: true
-          name: mybuilder   # 自定义 builder 名称
+          name: mybuilder
+          # 添加 BuildKit 配置标志
+          buildkitd-flags: --debug --allow-insecure-entitlement security.insecure
+          # 启用内联缓存支持（可选）
+          driver-opts: |
+            image=moby/buildkit:master  # 使用最新 BuildKit 版本
+            network=host
 
-      # 6. 登录 Azure 容器注册表
+      # 7. 登录 Azure 容器注册表
       - name: Log in to Azure Container Registry
         uses: azure/docker-login@v1
         with:
@@ -47,13 +60,21 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 7. 构建 & 推送 Docker 镜像（带缓存）
+      # 8. 构建 & 推送 Docker 镜像（带缓存优化）
       - name: Build and push Docker image (with cache)
         uses: docker/build-push-action@v5
         with:
-          builder: mybuilder   # 显式使用上面创建的 builder
+          builder: mybuilder
           context: .
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest
+          # 缓存配置
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # 添加构建参数启用内联缓存
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          # 启用详细日志输出
+          provenance: false
+          # 添加进度类型以便查看缓存使用情况
+          provenance-attrs: mode=max

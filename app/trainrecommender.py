@@ -264,7 +264,7 @@ if __name__ == "__main__":
         content_dim   = act_feats.shape[1]
     )
 
-    model_path = "../model/recommender_checkpoint.pth"
+    model_path = "model/recommender_checkpoint.pth"
 
     if os.path.exists(model_path):
         ckpt = torch.load(model_path, map_location="cpu")

@@ -128,7 +128,7 @@ def train_tag_predictor():
         print(f"Epoch {epoch+1} | Train Loss: {total_loss/len(train_loader):.4f} | Val Loss: {val_loss/len(val_loader):.4f}")
 
     # 保存模型
-    model_dir = Path("../model")
+    model_dir = Path("model")
     model_dir.mkdir(exist_ok=True)
     torch.save(model.state_dict(), model_dir / "tag_predictor.pth")
     print(f"✅ 模型已保存到 {model_dir/'tag_predictor.pth'}")

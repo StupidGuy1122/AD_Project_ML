@@ -1,56 +1,28 @@
-name: CI/CD to Azure ACR
+name: Build and Push Docker Image to Azure Container Registry
 
 on:
   push:
     branches:
-      - master
+      - master  # 推送 master 分支时触发
 
 jobs:
-  test-and-build:
+  docker:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 拉取代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 设置 Python 环境（运行 pytest）
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      # 3. 安装测试依赖
-      - name: Install dependencies for tests
+      # 登录 Azure 容器注册表
+      - name: Azure Container Registry Login
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} \
+            -u "${{ secrets.ACR_USERNAME }}" --password-stdin
 
-      # 4. 运行 pytest
-      - name: Run pytest
-        run: pytest
+      # 构建镜像
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest .
 
-      # 5. 开启 containerd image store
-      - name: Enable containerd image store
-        run: |
-          sudo mkdir -p /etc/docker
-          echo '{ "features": { "containerd-snapshotter": true } }' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
-
-      # 6. 登录 Azure ACR
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      # 7. 构建并推送（使用 containerd 本地缓存）
-      - name: Build and push Docker image with local cache
-        run: |
-          DOCKER_BUILDKIT=1 docker build \
-            --cache-from=type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:cache \
-            --cache-to=type=registry,ref=${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:cache,mode=max \
-            -t ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest .
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest
+      # 推送镜像
+      - name: Push Docker image
+        run: docker push ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest

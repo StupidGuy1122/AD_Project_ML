@@ -1,62 +1,45 @@
-import sys
-from pathlib import Path
 import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import patch
-import pandas as pd
+from fastapi.testclient import TestClient
+from app.main import app
 
-# 添加项目根目录到系统路径
-root_dir = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(root_dir))
-
-# 现在可以正确导入 app 模块
-from app.main import app  # 从 app 包导入 main 模块
-
-# 导入 FastAPI app
 client = TestClient(app)
 
-@pytest.fixture
-def mock_recommend_df():
-    """返回模拟的推荐结果 DataFrame"""
-    return pd.DataFrame({
-        "id": [101, 102],
-        "title": ["Activity A", "Activity B"],
-        "score": [0.9, 0.8]
-    })
+def test_recommend_activity_mock():
+    mock_df = type('MockDF', (), {
+        '__getitem__': lambda self, key: [1, 2, 3] if key == 'id' else [],
+        'astype': lambda self, dtype: self,
+        'tolist': lambda self: [1, 2, 3]
+    })()
 
-def test_recommend_endpoint(mock_recommend_df):
-    """测试 /recommend/ 接口"""
-    with patch("app.main.recommendActivity", return_value=mock_recommend_df):
-        resp = client.post("/recommendActivity/", json={"user_id": 1, "top_k": 2})
+    with patch('app.main.recommend_activities', return_value=mock_df):
+        resp = client.post("/recommendActivity/", json={"user_id": 1, "top_k": 3})
         assert resp.status_code == 200
-        data = resp.json()
-        assert "recommended_activity_ids" in data
-        assert data["recommended_activity_ids"] == [101, 102]
+        assert resp.json() == {"recommended_activity_ids": [1, 2, 3]}
 
-def test_similar_users_endpoint():
-    """测试 /similar-users/ 接口"""
-    mock_users = [(2, 0.95), (3, 0.88)]
-    with patch("app.main.recommendUser", return_value=mock_users):
+def test_recommend_user_mock():
+    mock_users = [(2, 0.95), (3, 0.90)]
+    with patch('app.main.recommend_similar_users', return_value=mock_users):
         resp = client.post("/recommendUser/", json={"user_id": 1, "top_k": 2})
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["user_id"] == 1
-        assert "similar_users" in data
-        assert data["similar_users"] == [{"user_id": 2}, {"user_id": 3}]
+        assert resp.json() == {
+            "user_id": 1,
+            "similar_users": [{"user_id": 2}, {"user_id": 3}]
+        }
 
-def test_predict_tags_endpoint():
-    """测试 /predict-tags/ 接口"""
-    mock_tags = ["tag1", "tag2"]
-    with patch("app.main.predictTags", return_value=mock_tags):
-        resp = client.post("/predictTags/", json={"title": "Test", "description": "Desc"})
+def test_predict_tags_mock():
+    with patch('app.main.predict_tags', return_value=["tagA", "tagB"]):
+        resp = client.post("/predictTags/", json={
+            "title": "Test Title",
+            "description": "Test Description"
+        })
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["predicted_tags"] == mock_tags
+        assert resp.json() == {"predicted_tags": ["tagA", "tagB"]}
 
-def test_retrain_endpoint():
-    """测试 /retrain/ 接口"""
-    with patch("app.main._run_retraining") as mock_run:
+def test_retrain_mock():
+    with patch('app.main._run_retraining', return_value=None) as mock_task:
         resp = client.get("/retrain/")
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["message"].startswith("Model retraining has been started")
+        assert resp.json() == {"message": "Model retraining has been started in background."}
+        # 确认后台任务被添加
+        mock_task.assert_not_called()  # 因为是 BackgroundTasks，不会立即调用

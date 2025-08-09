@@ -36,9 +36,18 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/amd64,linux/arm64  # 根据您的需求选择平台
+          use: true  # ✅ 激活并保持到后续 steps
 
+      # 6. 设置 Buildx（关键优化点）
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          install: true
+          name: mybuilder
+          driver-opts: image=moby/buildkit:latest   # ✅ 用最新稳定版
 
-      # 6. 登录 Azure 容器注册表
+      # 7. 登录 Azure 容器注册表
       - name: Log in to Azure Container Registry
         uses: azure/docker-login@v1
         with:
@@ -46,18 +55,21 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 7. 构建 & 推送 Docker 镜像（带缓存优化）
-      - name: Build and push Docker image (create builder inline)
+      # 8. 构建 & 推送 Docker 镜像（带缓存优化）
+      - name: Build and push Docker image (with cache)
         uses: docker/build-push-action@v5
         with:
+          builder: mybuilder
           context: .
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest
-          platforms: linux/amd64,linux/arm64
+          # 缓存配置
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # 添加构建参数启用内联缓存
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          # 启用详细日志输出
           provenance: false
-          builder: |
-            driver=docker-container
-            driver-opts=image=moby/buildkit:latest
-      
+          # 添加进度类型以便查看缓存使用情况
+          provenance-attrs: mode=max

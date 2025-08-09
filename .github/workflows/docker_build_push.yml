@@ -20,7 +20,19 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (with cache)
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest .
+          docker pull ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest || true
+          docker build \
+            --cache-from ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest \
+            -t ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest .
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest
+
+      # 可选：构建完成后重启 Azure Web App
+      - name: Azure WebApp restart
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az webapp restart \
+              --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}

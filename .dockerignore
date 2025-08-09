@@ -1,0 +1,37 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Virtual environments
+env/
+venv/
+.antenv/
+.venv/
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints
+
+# Large datasets (除非要打包进去)
+data/
+datasets/
+
+# 不要忽略模型文件
+# models/
+# *.pt
+# *.pth
+
+# Node / front-end stuff
+node_modules/

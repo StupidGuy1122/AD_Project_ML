@@ -37,6 +37,7 @@ jobs:
         with:
           driver: docker-container
           install: true
+          name: mybuilder   # 自定义 builder 名称
 
       # 6. 登录 Azure 容器注册表
       - name: Log in to Azure Container Registry
@@ -50,6 +51,7 @@ jobs:
       - name: Build and push Docker image (with cache)
         uses: docker/build-push-action@v5
         with:
+          builder: mybuilder   # 显式使用上面创建的 builder
           context: .
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest

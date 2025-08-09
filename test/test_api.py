@@ -26,8 +26,8 @@ def mock_recommend_df():
 
 def test_recommend_endpoint(mock_recommend_df):
     """测试 /recommend/ 接口"""
-    with patch("app.main.recommend_activities", return_value=mock_recommend_df):
-        resp = client.post("/recommend/", json={"user_id": 1, "top_k": 2})
+    with patch("app.main.recommendActivity", return_value=mock_recommend_df):
+        resp = client.post("/recommendActivity/", json={"user_id": 1, "top_k": 2})
         assert resp.status_code == 200
         data = resp.json()
         assert "recommended_activity_ids" in data
@@ -36,8 +36,8 @@ def test_recommend_endpoint(mock_recommend_df):
 def test_similar_users_endpoint():
     """测试 /similar-users/ 接口"""
     mock_users = [(2, 0.95), (3, 0.88)]
-    with patch("app.main.recommend_similar_users", return_value=mock_users):
-        resp = client.post("/similar-users/", json={"user_id": 1, "top_k": 2})
+    with patch("app.main.recommendUser", return_value=mock_users):
+        resp = client.post("/recommendUser/", json={"user_id": 1, "top_k": 2})
         assert resp.status_code == 200
         data = resp.json()
         assert data["user_id"] == 1
@@ -47,8 +47,8 @@ def test_similar_users_endpoint():
 def test_predict_tags_endpoint():
     """测试 /predict-tags/ 接口"""
     mock_tags = ["tag1", "tag2"]
-    with patch("app.main.predict_tags", return_value=mock_tags):
-        resp = client.post("/predict-tags/", json={"title": "Test", "description": "Desc"})
+    with patch("app.main.predictTags", return_value=mock_tags):
+        resp = client.post("/predictTags/", json={"title": "Test", "description": "Desc"})
         assert resp.status_code == 200
         data = resp.json()
         assert data["predicted_tags"] == mock_tags

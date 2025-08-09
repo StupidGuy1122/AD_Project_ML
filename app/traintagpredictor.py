@@ -12,7 +12,7 @@ from pathlib import Path
 from tagpredictor_def import DeepTagPredictor, save_vectorizer, BertEmbedder
 
 # 数据库连接
-DB_URI = "mysql+pymysql://root:wy20031122@localhost/adproject"
+DB_URI = "mysql+pymysql://huerji%40adproject-database:HuErJi123@adproject-database.mysql.database.azure.com:3306/adproject?ssl=true"
 engine = create_engine(DB_URI)
 
 # ======== 文本预处理 ========

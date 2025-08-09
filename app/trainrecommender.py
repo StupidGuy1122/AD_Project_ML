@@ -1,7 +1,5 @@
 import os
 import re
-from pathlib import Path
-
 import pandas as pd
 import numpy as np
 import torch
@@ -12,11 +10,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
 from sqlalchemy import create_engine
-
 from recommender_def import HybridRecommender
 
-# —— 1. 建立数据库连接 —— 
-DB_URI = "mysql+pymysql://root:wy20031122@localhost/adproject"
+# —— 1. 建立数据库连接 ——
+DB_URI = "mysql+pymysql://huerji%40adproject-database:HuErJi123@adproject-database.mysql.database.azure.com:3306/adproject?ssl=true"
 engine = create_engine(DB_URI)
 
 def load_data():

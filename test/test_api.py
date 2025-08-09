@@ -2,20 +2,25 @@ import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from app.main import app
+from unittest.mock import MagicMock
 
 client = TestClient(app)
 
 def test_recommend_activity_mock():
-    mock_df = type('MockDF', (), {
-        '__getitem__': lambda self, key: [1, 2, 3] if key == 'id' else [],
-        'astype': lambda self, dtype: self,
-        'tolist': lambda self: [1, 2, 3]
-    })()
+    # 模拟 Series
+    mock_series = MagicMock()
+    mock_series.astype.return_value = mock_series
+    mock_series.tolist.return_value = [1, 2, 3]
+
+    # 模拟 DataFrame
+    mock_df = MagicMock()
+    mock_df.__getitem__.return_value = mock_series
 
     with patch('app.main.recommend_activities', return_value=mock_df):
         resp = client.post("/recommendActivity/", json={"user_id": 1, "top_k": 3})
         assert resp.status_code == 200
         assert resp.json() == {"recommended_activity_ids": [1, 2, 3]}
+
 
 def test_recommend_user_mock():
     mock_users = [(2, 0.95), (3, 0.90)]
@@ -41,5 +46,5 @@ def test_retrain_mock():
         resp = client.get("/retrain/")
         assert resp.status_code == 200
         assert resp.json() == {"message": "Model retraining has been started in background."}
-        # 确认后台任务被添加
-        mock_task.assert_not_called()  # 因为是 BackgroundTasks，不会立即调用
+        mock_task.assert_called_once()
+

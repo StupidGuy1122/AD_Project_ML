@@ -31,14 +31,14 @@ jobs:
       - name: Run pytest
         run: pytest
 
-      # 5. 缓存 Docker 层
-      - name: Cache Docker layers
+      # 5. 缓存 BuildKit 层
+      - name: Cache Docker BuildKit layers
         uses: actions/cache@v4
         with:
-          path: /tmp/.docker-cache
-          key: ${{ runner.os }}-docker-${{ github.sha }}
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildkit-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-docker-
+            ${{ runner.os }}-buildkit-
 
       # 6. 登录 Azure ACR
       - name: Log in to Azure Container Registry
@@ -48,12 +48,12 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 7. 构建并推送（用缓存）
-      - name: Build and push Docker image
+      # 7. 构建并推送（BuildKit + 缓存）
+      - name: Build and push Docker image (BuildKit cache)
         run: |
-          docker build \
-            --cache-from=type=local,src=/tmp/.docker-cache \
-            --cache-to=type=local,dest=/tmp/.docker-cache-new,mode=max \
+          DOCKER_BUILDKIT=1 docker build \
+            --cache-from=type=local,src=/tmp/.buildx-cache \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
             -t ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest .
-          mv /tmp/.docker-cache-new /tmp/.docker-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/adprojectml:latest

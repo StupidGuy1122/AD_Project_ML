@@ -5,7 +5,7 @@
 4、需要调用API时，需要 run uvicorn app.main:app --reload --port 8000
 5、API传输json例子：
 	请求推荐活动（只返回 ID）：
-	POST http://localhost:8000/recommend/
+	POST /recommendActivity/
 	{
 	  "user_id": 1,
 	  "top_k": 2
@@ -15,7 +15,7 @@
 		"recommended_activity_ids": recommendations#['id', 'title', 'score']
 	}
 	查找相似用户：c
-	POST http://localhost:8000/similar-users/
+	POST /recommendUser/
 	{
 	  "user_id": 1,
 	  "top_k": 3
@@ -47,7 +47,7 @@
 3、需要测试模型但不需要使用API时,run app/tagpredictor.py，注意自行在代码中更改推荐数据等
 4、需要调用API时，需要 run uvicorn app.main:app --reload --port 8000
 5、API传输json例子：
-    POST /predict-tags/
+    POST /predictTags/
     Content-Type: application/json
     {
       "title": "周末户外徒步活动",
@@ -57,3 +57,8 @@
     {
       "predicted_tags": ["户外", "徒步", "自然", "周末活动"]
     }
+
+另外两个测试训练函数实现功能的API接口：
+@app.get("/TrainRecommender/")
+@app.get("/TrainTagPredictor/")
+任何输出可在docker log里面查看

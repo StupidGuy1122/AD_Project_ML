@@ -19,8 +19,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
         torchvision==0.20.1+cpu \
         --extra-index-url https://download.pytorch.org/whl/cpu
 
-# 安装其余依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# 安装其余依赖（加上 PyMySQL）
+RUN pip install --no-cache-dir pymysql && \
+    pip install --no-cache-dir -r requirements.txt
 
 # ===== 运行阶段 =====
 FROM python:3.10-slim
@@ -36,10 +37,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# 复制项目代码
+# 复制项目代码（包含证书）
 COPY . .
 
-# 环境变量
+# 环境变量（告诉 Python 证书路径）
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 

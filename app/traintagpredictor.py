@@ -9,11 +9,24 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
 from sqlalchemy import create_engine
 from pathlib import Path
-from tagpredictor_def import DeepTagPredictor, save_vectorizer, BertEmbedder
+import pymysql
+from app.tagpredictor_def import DeepTagPredictor, save_vectorizer, BertEmbedder
 
 # 数据库连接
-DB_URI = "mysql+pymysql://huerji%40adproject-database:HuErJi123@adproject-database.mysql.database.azure.com:3306/adproject?ssl=true"
-engine = create_engine(DB_URI)
+DB_HOST = "adproject-database.mysql.database.azure.com"
+DB_NAME = "adproject"
+DB_USER = "huerji@adproject-database"
+DB_PASSWORD = "HuErJi123"
+SSL_CA_PATH = "cert/BaltimoreCyberTrustRoot.crt.pem"
+
+conn = pymysql.connect(
+    host=DB_HOST,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME,
+    port=3306,
+    ssl_ca=SSL_CA_PATH
+)
 
 # ======== 文本预处理 ========
 def preprocess_text(text):
@@ -37,7 +50,7 @@ def load_tag_data():
         LEFT JOIN tags t ON at.TagId = t.TagId
         GROUP BY a.ActivityId
     """
-    df = pd.read_sql(query, engine)
+    df = pd.read_sql(query, conn)
     df['tag_list'] = df['tags'].apply(
         lambda x: [t.strip() for t in x.split(',')] if pd.notna(x) else []
     )

@@ -9,12 +9,24 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
-from sqlalchemy import create_engine
-from recommender_def import HybridRecommender
+import pymysql
+from app.recommender_def import HybridRecommender
 
-# —— 1. 建立数据库连接 ——
-DB_URI = "mysql+pymysql://huerji%40adproject-database:HuErJi123@adproject-database.mysql.database.azure.com:3306/adproject?ssl=true"
-engine = create_engine(DB_URI)
+# 数据库连接
+DB_HOST = "adproject-database.mysql.database.azure.com"
+DB_NAME = "adproject"
+DB_USER = "huerji@adproject-database"
+DB_PASSWORD = "HuErJi123"
+SSL_CA_PATH = "cert/BaltimoreCyberTrustRoot.crt.pem"
+
+conn = pymysql.connect(
+    host=DB_HOST,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME,
+    port=3306,
+    ssl_ca=SSL_CA_PATH
+)
 
 def load_data():
     # —— 1.1 读取 activities 表 —— 
@@ -28,7 +40,7 @@ def load_data():
           EndTime     AS endtime,
           number      AS duration
         FROM activities
-    """, engine)
+    """, conn)
 
     # —— 1.2 解析时间字段 —— 
     activity_df['starttime'] = pd.to_datetime(
@@ -45,7 +57,7 @@ def load_data():
           ActivityId AS activityid,
           1          AS favorite
         FROM userfavouriteactivity
-    """, engine)
+    """, conn)
 
     # —— 1.4 读取 users 表 ——
     user_df = pd.read_sql("""
@@ -54,17 +66,17 @@ def load_data():
           Name,
           Email
         FROM users
-    """, engine)
+    """, conn)
 
     # —— 1.5 读取 profile-标签关联，并聚合到每个用户 ——
     userprofiles_df = pd.read_sql(
-        "SELECT Id AS profile_id, UserId FROM userprofiles", engine
+        "SELECT Id AS profile_id, UserId FROM userprofiles", conn
     )
     upt = pd.read_sql(
-        "SELECT UserProfileId AS profile_id, TagId FROM userprofiletag", engine
+        "SELECT UserProfileId AS profile_id, TagId FROM userprofiletag", conn
     )
     tags_df = pd.read_sql(
-        "SELECT TagId, Name FROM tags", engine
+        "SELECT TagId, Name FROM tags", conn
     )
 
     upt = upt.merge(tags_df, on='TagId', how='left')

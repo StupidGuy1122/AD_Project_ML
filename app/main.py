@@ -1,7 +1,3 @@
-# app/main.py
-
-# python -m uvicorn app.main:app --reload --port 8000
-
 import os
 import subprocess
 from fastapi import FastAPI, BackgroundTasks
@@ -64,31 +60,6 @@ def recommendUser(request: SimilarUserRequest):
         "similar_users": sim_users
     }
 
-def _run_retraining():
-    """
-    在子进程中调用 trainrecommender 脚本重新训练并保存模型。
-    注意：请确保你的 trainrecommender.py
-    顶层模块名是 app.trainrecommender，且可以使用 `python -m app.trainrecommender` 方式运行。
-    """
-    # 切到项目根目录，避免路径问题
-    cwd = os.getcwd()
-    # 启动子进程执行重训脚本
-    subprocess.run(
-        ["python", "-m", "app.trainrecommender"],
-        cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-
-@app.get("/retrain/")
-def retrain(background_tasks: BackgroundTasks):
-    """
-    异步触发模型重训练。立即返回，由后台任务去执行 trainrecommender.py。
-    """
-    background_tasks.add_task(_run_retraining)
-    return {"message": "Model retraining has been started in background."}
-
 @app.post("/predictTags/")
 def predictTags(request: TagPredictRequest):
     """预测活动标签API"""
@@ -98,18 +69,30 @@ def predictTags(request: TagPredictRequest):
     except Exception as e:
         return {"error": f"标签预测失败: {str(e)}"}
 
-import sys
-from fastapi.routing import APIRoute
+def _run_train_recommender():
+    """运行 trainrecommender.py"""
+    cwd = os.getcwd()
+    subprocess.run(
+        ["python", "-m", "app.trainrecommender"],
+        cwd=cwd,
 
-def list_routes(app: FastAPI):
-    route_list = []
-    for route in app.routes:
-        if isinstance(route, APIRoute):
-            methods = ','.join(route.methods)
-            route_list.append(f"{methods} {route.path}")
-    return route_list
+    )
 
-print("=== API 路由列表 ===", file=sys.stderr)
-for r in list_routes(app):
-    print(r, file=sys.stderr)
-print("==================", file=sys.stderr)
+def _run_train_predictor():
+    """运行 traintagpredictor.py"""
+    cwd = os.getcwd()
+    subprocess.run(
+        ["python", "-m", "app.traintagpredictor"],
+        cwd=cwd,
+
+    )
+
+@app.get("/TrainRecommender/")
+def test_train_recommender(background_tasks: BackgroundTasks):
+    background_tasks.add_task(_run_train_recommender)
+    return {"message": "trainrecommender 已在后台启动"}
+
+@app.get("/TrainTagPredictor/")
+def test_train_predictor(background_tasks: BackgroundTasks):
+    background_tasks.add_task(_run_train_predictor)
+    return {"message": "traintagpredictor 已在后台启动"}

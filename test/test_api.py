@@ -41,10 +41,19 @@ def test_predict_tags_mock():
         assert resp.status_code == 200
         assert resp.json() == {"predicted_tags": ["tagA", "tagB"]}
 
-def test_retrain_mock():
-    with patch('app.main._run_retraining', return_value=None) as mock_task:
-        resp = client.get("/retrain/")
+def test_train_recommender_mock():
+    with patch('app.main._run_train_recommender', return_value=None) as mock_task:
+        resp = client.get("/TrainRecommender/")
         assert resp.status_code == 200
-        assert resp.json() == {"message": "Model retraining has been started in background."}
+        assert resp.json() == {"message": "trainrecommender 已在后台启动"}
         mock_task.assert_called_once()
+
+
+def test_train_tag_predictor_mock():
+    with patch('app.main._run_train_predictor', return_value=None) as mock_task:
+        resp = client.get("/TrainTagPredictor/")
+        assert resp.status_code == 200
+        assert resp.json() == {"message": "traintagpredictor 已在后台启动"}
+        mock_task.assert_called_once()
+
 

@@ -75,7 +75,9 @@ def _run_train_recommender():
     subprocess.run(
         ["python", "-m", "app.trainrecommender"],
         cwd=cwd,
-
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
     )
 
 def _run_train_predictor():
@@ -84,7 +86,9 @@ def _run_train_predictor():
     subprocess.run(
         ["python", "-m", "app.traintagpredictor"],
         cwd=cwd,
-
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
     )
 
 @app.get("/TrainRecommender/")

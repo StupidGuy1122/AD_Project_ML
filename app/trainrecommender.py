@@ -15,7 +15,7 @@ from app.recommender_def import HybridRecommender
 # 数据库连接
 DB_HOST = "adproject-database.mysql.database.azure.com"
 DB_NAME = "adproject"
-DB_USER = "huerji@adproject-database"
+DB_USER = "huerji"
 DB_PASSWORD = "HuErJi123"
 SSL_CA_PATH = "cert/BaltimoreCyberTrustRoot.crt.pem"
 

@@ -13,6 +13,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 安装 Python 环境
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 安装依赖并运行 pytest
+      - name: Install dependencies and run tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+          pytest --maxfail=1 --disable-warnings -q
+
       # 登录 Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -28,14 +42,15 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
 
-
-      # 尝试从 Docker Hub 拉取上一次构建的镜像作为缓存
+      # 尝试从 Docker Hub 拉取缓存
       - name: Pull cache image from Docker Hub
         run: docker pull stupidguy/adprojectml:cache || echo "No cache image found, building from scratch"
 
-      # 构建并推送镜像（会复用缓存）
+      # 构建并推送镜像
       - name: Build and push image
         run: |
-          docker build --cache-from=stupidguy/adprojectml:cache -t adprojectml.azurecr.io/adprojectml:latest -t stupidguy/adprojectml:cache .
+          docker build --cache-from=stupidguy/adprojectml:cache \
+            -t adprojectml.azurecr.io/adprojectml:latest \
+            -t stupidguy/adprojectml:cache .
           docker push adprojectml.azurecr.io/adprojectml:latest
           docker push stupidguy/adprojectml:cache

@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 直接安装并删除 /wheels，不产生额外层
 COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+RUN find /wheels -name "*.whl" -print0 | xargs -0 pip install --no-cache-dir && rm -rf /wheels
 
 COPY . .
 

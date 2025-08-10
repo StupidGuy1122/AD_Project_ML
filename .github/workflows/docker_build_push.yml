@@ -42,15 +42,14 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
 
-      # 尝试从 Docker Hub 拉取缓存
+
+      # 尝试从 Docker Hub 拉取上一次构建的镜像作为缓存
       - name: Pull cache image from Docker Hub
         run: docker pull stupidguy/adprojectml:cache || echo "No cache image found, building from scratch"
 
-      # 构建并推送镜像
+      # 构建并推送镜像（会复用缓存）
       - name: Build and push image
         run: |
-          docker build --cache-from=stupidguy/adprojectml:cache \
-            -t adprojectml.azurecr.io/adprojectml:latest \
-            -t stupidguy/adprojectml:cache .
+          docker build --cache-from=stupidguy/adprojectml:cache -t adprojectml.azurecr.io/adprojectml:latest -t stupidguy/adprojectml:cache .
           docker push adprojectml.azurecr.io/adprojectml:latest
           docker push stupidguy/adprojectml:cache

@@ -26,7 +26,7 @@ class SimilarUserRequest(BaseModel):
 class TagPredictRequest(BaseModel):
     title: str
     description: str
-
+#falhflahlfalfalf
 @app.post("/recommendActivity/")
 def recommendActivity(request: RecommendRequest):
     # 调用推荐函数，返回一个包含 id, title, score 的 DataFrame

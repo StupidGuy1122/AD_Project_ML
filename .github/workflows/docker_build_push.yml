@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 释放磁盘空间（防止 No space left on device）
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -18,11 +17,9 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           docker system prune -af
 
-      # 2. 拉取代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 3. 安装 Python 依赖并运行 pytest（只装测试必需的依赖）
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -31,31 +28,36 @@ jobs:
       - name: Install test dependencies
         run: pip install -r requirements.txt pytest
 
-      - name: Run pytest
-        run: pytest
-        # 测试失败直接中断整个流程
+      - name: Run pytest with report
+        run: |
+          mkdir -p test-reports
+          pytest --junitxml=test-reports/report.xml
         continue-on-error: false
 
-      # 4. 登录 Docker Hub
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: test-reports/report.xml
+
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 5. 登录 Azure ACR
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          registry: ${{ secrets.AZURE_REGISTRY }}
+          username: ${{ secrets.AZURE_USERNAME }}
+          password: ${{ secrets.AZURE_PASSWORD }}
 
-      # 6. 拉取 Docker Hub 缓存镜像（如果存在）
       - name: Pull cache image from Docker Hub
         run: docker pull stupidguy/adprojectml:cache || echo "No cache image found, building from scratch"
 
-      # 7. 构建 & 推送镜像（缓存+双推）
       - name: Build and push image
         run: |
           docker build \

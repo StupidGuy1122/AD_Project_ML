@@ -73,7 +73,8 @@ def recommend_activities(user_id, top_k):
     recommended['score'] = top_scores.cpu().numpy()
 
     recommended = recommended.rename(columns={'activityid': 'id'})
-    return recommended[['id', 'title', 'score']]
+    return "not a list"
+    #recommended[['id', 'title', 'score']]
 
 
 @torch.no_grad()

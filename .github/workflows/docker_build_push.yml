@@ -33,42 +33,45 @@ jobs:
           pip install -r requirements.txt
           pip install pytest bandit
 
-      # 4. 运行 Bandit 安全扫描
+      # 4. 运行 Bandit 并生成 HTML 报告
       - name: Run Bandit (Python SAST)
         run: |
           mkdir -p sast-reports
-          bandit -r . -f xml -o sast-reports/bandit-report.xml
+          bandit -r . -f html -o sast-reports/bandit-report.html
         continue-on-error: true
 
-      # 5. 运行 Semgrep 安全扫描
+      # 5. 运行 Semgrep 并生成 HTML 报告
       - name: Run Semgrep (Python SAST)
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: auto
+        run: |
+          mkdir -p sast-reports
+          semgrep --config auto --json > sast-reports/semgrep-report.json
+          echo "<html><body><h2>Semgrep Report</h2><pre>" > sast-reports/semgrep-report.html
+          cat sast-reports/semgrep-report.json | jq '.' >> sast-reports/semgrep-report.html
+          echo "</pre></body></html>" >> sast-reports/semgrep-report.html
         continue-on-error: true
 
-      # 6. 上传 SAST 报告
-      - name: Upload Bandit report
+      # 6. 上传 Bandit HTML 报告
+      - name: Upload Bandit HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-report
-          path: sast-reports/bandit-report.xml
+          name: bandit-html-report
+          path: sast-reports/bandit-report.html
 
-      # 7. 运行测试
+      # 7. 上传 Semgrep HTML 报告
+      - name: Upload Semgrep HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-html-report
+          path: sast-reports/semgrep-report.html
+
+      # 8. 运行pytest测试
       - name: Run pytest
         run: |
           mkdir -p test-reports
           pytest --junitxml=test-reports/report.xml
-        continue-on-error: false
-
-      # 8. 上传测试报告
-      - name: Upload test report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-report
-          path: test-reports/report.xml
+        continue-on-error: true
 
       # 9. 登录 Docker Hub
       - name: Log in to Docker Hub

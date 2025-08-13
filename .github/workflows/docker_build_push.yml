@@ -34,21 +34,69 @@ jobs:
           pip install pytest bandit
 
       # 4. 运行 Bandit 并生成 HTML 报告
-      - name: Run Bandit (Python SAST)
+      - name: Run Bandit and generate styled HTML report
         run: |
           mkdir -p sast-reports
-          bandit -r . -f html -o sast-reports/bandit-report.html
+          bandit -r . -f json -o sast-reports/bandit.json
+
+          echo "<html><head><style>
+            body { font-family: Arial; padding: 20px; }
+            h2 { color: #c0392b; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .medium { background-color: #fff3cd; }
+            .high { background-color: #f8d7da; }
+          </style></head><body><h2>⚠️ Bandit 安全报告（中等级别及以上）</h2><table>
+          <tr><th>文件</th><th>行号</th><th>问题</th><th>严重性</th><th>说明</th></tr>" > sast-reports/bandit-report.html
+
+          cat sast-reports/bandit.json | jq -c '.results[]' | while read -r issue; do
+            severity=$(echo "$issue" | jq -r '.issue_severity')
+            if [[ "$severity" == "MEDIUM" || "$severity" == "HIGH" ]]; then
+              file=$(echo "$issue" | jq -r '.filename')
+              line=$(echo "$issue" | jq -r '.line_number')
+              test_id=$(echo "$issue" | jq -r '.test_id')
+              msg=$(echo "$issue" | jq -r '.issue_text')
+              link=$(echo "$issue" | jq -r '.more_info')
+              echo "<tr class=\"$severity\"><td>$file</td><td>$line</td><td><a href=\"$link\" target=\"_blank\">$test_id</a></td><td>$severity</td><td>$msg</td></tr>" >> sast-reports/bandit-report.html
+            fi
+          done
+
+          echo "</table></body></html>" >> sast-reports/bandit-report.html
         continue-on-error: true
 
+
       # 5. 运行 Semgrep 并生成 HTML 报告
-      - name: Run Semgrep (Python SAST)
+      - name: Run Semgrep and generate styled HTML report
         run: |
           mkdir -p sast-reports
-          semgrep --config auto --json > sast-reports/semgrep-report.json
-          echo "<html><body><h2>Semgrep Report</h2><pre>" > sast-reports/semgrep-report.html
-          cat sast-reports/semgrep-report.json | jq '.' >> sast-reports/semgrep-report.html
-          echo "</pre></body></html>" >> sast-reports/semgrep-report.html
+          semgrep --config auto --json --output sast-reports/semgrep.json || echo '{"results":[]}' > sast-reports/semgrep.json
+
+          echo "<html><head><style>
+            body { font-family: Arial; padding: 20px; }
+            h2 { color: #c0392b; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .WARNING { background-color: #fff3cd; }
+            .ERROR { background-color: #f8d7da; }
+          </style></head><body><h2>⚠️ Semgrep 安全报告（WARNING 及以上）</h2><table>
+          <tr><th>文件</th><th>行号</th><th>规则</th><th>等级</th><th>说明</th></tr>" > sast-reports/semgrep-report.html
+
+          cat sast-reports/semgrep.json | jq -c '.results[]' | while read -r issue; do
+            severity=$(echo "$issue" | jq -r '.extra.severity')
+            if [[ "$severity" == "WARNING" || "$severity" == "ERROR" ]]; then
+              file=$(echo "$issue" | jq -r '.path')
+              line=$(echo "$issue" | jq -r '.start.line')
+              rule=$(echo "$issue" | jq -r '.check_id')
+              msg=$(echo "$issue" | jq -r '.extra.message')
+              echo "<tr class=\"$severity\"><td>$file</td><td>$line</td><td>$rule</td><td>$severity</td><td>$msg</td></tr>" >> sast-reports/semgrep-report.html
+            fi
+          done
+
+          echo "</table></body></html>" >> sast-reports/semgrep-report.html
         continue-on-error: true
+
 
       # 6. 上传 Bandit HTML 报告
       - name: Upload Bandit HTML report

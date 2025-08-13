@@ -61,8 +61,8 @@ def load_vectorizer(filepath="model/tag_vectorizers.pkl"):
 # ======== 文本向量化工具（BERT） ========
 class BertEmbedder:
     def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
-        self.model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+        self.tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2",revision="e3c4a7d")
+        self.model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2",revision="e3c4a7d")
         self.model.eval()
 
     def encode(self, text):

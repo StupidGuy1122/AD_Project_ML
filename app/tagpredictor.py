@@ -8,7 +8,7 @@ def load_tag_model():
         mlb = load_vectorizer()
         input_dim = 384  # all-MiniLM-L6-v2 输出维度
         model = DeepTagPredictor(input_dim, len(mlb.classes_))
-        model.load_state_dict(torch.load("model/tag_predictor.pth", map_location="cpu", weights_only=False))
+        model.load_state_dict(torch.load("model/tag_predictor.pth", map_location="cpu", weights_only=True))
         model.eval()
         return model, mlb
     except Exception as e:

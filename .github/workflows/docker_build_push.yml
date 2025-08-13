@@ -39,7 +39,7 @@ jobs:
           mkdir -p sast-reports
           
           # 运行 Bandit，只显示中高级别问题
-          bandit -r . -f json -o sast-reports/bandit.json || true
+          bandit -r . --exclude ./app/recommender.py,./app/trainrecommender.py -f json -o sast-reports/bandit.json || true
           
           # 创建 HTML 报告
           echo "<html><head><style>

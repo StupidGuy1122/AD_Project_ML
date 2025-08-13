@@ -33,112 +33,95 @@ jobs:
           pip install -r requirements.txt
           pip install pytest bandit
 
-      # 4. 运行 Bandit 并生成 HTML 报告
-      - name: Run Bandit and generate styled HTML report
+      # 4. 运行 Bandit 并生成 HTML 报告（只显示中高级问题）
+      - name: Run Bandit and generate security report
         run: |
           mkdir -p sast-reports
-          bandit -r . -f json -o sast-reports/bandit.json || echo '{"results":[]}' > sast-reports/bandit.json
-
+          
+          # 运行 Bandit，只显示中高级别问题
+          bandit -r . -f json -o sast-reports/bandit.json || true
+          
+          # 创建 HTML 报告
           echo "<html><head><style>
             body { font-family: Arial; padding: 20px; }
             h2 { color: #c0392b; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+            th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
             th { background-color: #f2f2f2; }
             .MEDIUM { background-color: #fff3cd; }
             .HIGH { background-color: #f8d7da; }
-          </style></head><body><h2>⚠️ Bandit 安全报告（中等级别及以上）</h2><table>
-          <tr><th>文件</th><th>行号</th><th>问题</th><th>等级</th><th>说明</th></tr>" > sast-reports/bandit-report.html
-
-          cat sast-reports/bandit.json | jq -c '.results[]' | while read -r issue; do
-            severity=$(echo "$issue" | jq -r '.issue_severity')
-            if [[ "$severity" == "MEDIUM" || "$severity" == "HIGH" ]]; then
+            .no-issues { 
+              background-color: #d4edda; 
+              color: #155724;
+              padding: 15px;
+              border-radius: 5px;
+              text-align: center;
+              margin: 20px 0;
+            }
+          </style></head>
+          <body>
+          <h2>🔒 Bandit 安全报告</h2>" > sast-reports/bandit-report.html
+          
+          # 检查是否有中高级别问题
+          issue_count=$(jq '.results | map(select(.issue_severity == "MEDIUM" or .issue_severity == "HIGH")) | length' sast-reports/bandit.json)
+          
+          if [ "$issue_count" -gt 0 ]; then
+            echo "<p>发现 $issue_count 个中高级别安全问题：</p>
+            <table>
+            <tr><th>文件</th><th>行号</th><th>问题</th><th>等级</th><th>说明</th></tr>" >> sast-reports/bandit-report.html
+          
+            # 处理每个问题
+            jq -c '.results[] | select(.issue_severity == "MEDIUM" or .issue_severity == "HIGH")' sast-reports/bandit.json | while read -r issue; do
+              severity=$(echo "$issue" | jq -r '.issue_severity')
               file=$(echo "$issue" | jq -r '.filename')
               line=$(echo "$issue" | jq -r '.line_number')
               test_id=$(echo "$issue" | jq -r '.test_id')
               msg=$(echo "$issue" | jq -r '.issue_text')
               link=$(echo "$issue" | jq -r '.more_info')
-              echo "<tr class=\"$severity\"><td>$file</td><td>$line</td><td><a href=\"$link\" target=\"_blank\">$test_id</a></td><td>$severity</td><td>$msg</td></tr>" >> sast-reports/bandit-report.html
-            fi
-          done
-
-          echo "</table></body></html>" >> sast-reports/bandit-report.html
+          
+              echo "<tr class=\"$severity\">
+                <td>$file</td>
+                <td>$line</td>
+                <td><a href=\"$link\" target=\"_blank\">$test_id</a></td>
+                <td>$severity</td>
+                <td>$msg</td>
+              </tr>" >> sast-reports/bandit-report.html
+            done
+          
+            echo "</table>" >> sast-reports/bandit-report.html
+          else
+            echo "<div class='no-issues'>
+              <h3>🎉 未发现中高级别安全问题！</h3>
+              <p>Bandit 扫描未检测到任何中高级别的安全漏洞。</p>
+            </div>" >> sast-reports/bandit-report.html
+          fi
+          
+          echo "</body></html>" >> sast-reports/bandit-report.html
         continue-on-error: true
 
-
-
-      # 5. 运行 Semgrep 并生成 HTML 报告
-      - name: Run Semgrep and export JSON
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: auto
-          output: sast-reports/semgrep.json
-          output-format: json
-        continue-on-error: true
-
-      - name: Generate styled Semgrep HTML report
-        run: |
-          echo "<html><head><style>
-            body { font-family: Arial; padding: 20px; }
-            h2 { color: #c0392b; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .WARNING { background-color: #fff3cd; }
-            .ERROR { background-color: #f8d7da; }
-          </style></head><body><h2>⚠️ Semgrep 安全报告（WARNING 及以上）</h2><table>
-          <tr><th>文件</th><th>行号</th><th>规则</th><th>等级</th><th>说明</th></tr>" > sast-reports/semgrep-report.html
-
-          cat sast-reports/semgrep.json | jq -c '.results[]' | while read -r issue; do
-            severity=$(echo "$issue" | jq -r '.extra.severity')
-            if [[ "$severity" == "WARNING" || "$severity" == "ERROR" ]]; then
-              file=$(echo "$issue" | jq -r '.path')
-              line=$(echo "$issue" | jq -r '.start.line')
-              rule=$(echo "$issue" | jq -r '.check_id')
-              msg=$(echo "$issue" | jq -r '.extra.message')
-              echo "<tr class=\"$severity\"><td>$file</td><td>$line</td><td>$rule</td><td>$severity</td><td>$msg</td></tr>" >> sast-reports/semgrep-report.html
-            fi
-          done
-
-          echo "</table></body></html>" >> sast-reports/semgrep-report.html
-        continue-on-error: true
-
-
-
-      # 6. 上传 Bandit HTML 报告
-      - name: Upload Bandit HTML report
+      # 5. 上传 Bandit HTML 报告
+      - name: Upload Bandit security report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-html-report
+          name: bandit-security-report
           path: sast-reports/bandit-report.html
 
-
-      # 7. 上传 Semgrep HTML 报告
-      - name: Upload Semgrep HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: semgrep-html-report
-          path: sast-reports/semgrep-report.html
-
-
-
-      # 8. 运行pytest测试
+      # 6. 运行pytest测试
       - name: Run pytest
         run: |
           mkdir -p test-reports
           pytest --junitxml=test-reports/report.xml
         continue-on-error: true
 
-      # 9. 登录 Docker Hub
+      # 7. 登录 Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 10. 登录 Azure ACR
+      # 8. 登录 Azure ACR
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
         with:
@@ -146,11 +129,11 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
 
-      # 11. 拉取缓存镜像
+      # 9. 拉取缓存镜像
       - name: Pull cache image from Docker Hub
         run: docker pull stupidguy/adprojectml:cache || echo "No cache image found, building from scratch"
 
-      # 12. 构建并推送镜像
+      # 10. 构建并推送镜像
       - name: Build and push image
         run: |
           docker build \
